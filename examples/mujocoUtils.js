@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { Reflector  } from './utils/Reflector.js';
 import { MuJoCoDemo } from './main.js';
-import { zipSync } from 'fflate';
 
 export async function reloadFunc() {
   // Delete the old scene and load the new scene
