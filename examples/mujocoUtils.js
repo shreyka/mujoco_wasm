@@ -1,11 +1,56 @@
 import * as THREE from 'three';
 import { Reflector  } from './utils/Reflector.js';
 import { MuJoCoDemo } from './main.js';
-import { zipSync } from 'fflate';
+import * as fflate from 'https://cdn.skypack.dev/fflate@0.8.2?min';
+import BrowserFS from 'https://cdn.skypack.dev/browserfs';
+
+BrowserFS.configure({ fs: 'MountableFileSystem', options: { '/': { fs: 'LocalStorage' } } }, async (err) => {
+  if (err) {
+    // Handle initialization error
+    console.error('Failed to initialize BrowserFS:', err);
+    return;
+  }
+
+
+  // Now you can use BrowserFS as if it were the Node.js fs module
+  const fs = BrowserFS.BFSRequire('fs');
+
+  // List all files in the root directory
+  fs.readdir('/temp', (err, files) => {
+    if (err) {
+      console.error('Error listing files:', err);
+    } else {
+      console.log('Files in root directory:', files);
+    }
+  });
+
+  const zipData = fs.readFile("examples/agility_cassie.zip", 'utf8', function(err, data) {
+    if (err) {
+      console.error('Error reading file:', err);
+    } else {
+      console.log('Contents of example.zip:', data);
+    }
+  });
+
+  console.log(zipData);
+
+});
+
+// async function unzipFile(filePath) {
+//   const zipData = fs.readFileSync(filePath);
+
+//   const unzipData = fflate.unzipSync(zipData);
+
+//   console.log(unzipData);
+
+//   return unzipData;
+// }
+
 
 export async function reloadFunc() {
   // Delete the old scene and load the new scene
   this.scene.remove(this.scene.getObjectByName("MuJoCo Root"));
+
   [this.model, this.state, this.simulation, this.bodies, this.lights] =
     await loadSceneFromURL(this.mujoco, this.params.scene, this);
   this.simulation.forward();
