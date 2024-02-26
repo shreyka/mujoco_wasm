@@ -26,7 +26,12 @@
   "homepage": "https://github.com/zalo/mujoco_wasm#readme",
   "dependencies": {
     "connect": "^3.7.0",
+    "cors": "^2.8.5",
+    "fflate": "^0.8.2",
     "serve-static": "^1.15.0",
     "three": "^0.150.1"
+  },
+  "devDependencies": {
+    "@flydotio/dockerfile": "^0.5.2"
   }
 }
