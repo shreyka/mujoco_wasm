@@ -4,6 +4,10 @@
  const fileUpload = require('express-fileupload');
  const {resolve} = require("path");
 
+ var AdmZip = require('adm-zip');
+
+ const { glob } = require('glob');
+
  var app = express()
  app
      .use(cors())
@@ -17,13 +21,24 @@
       }
     
     // The name of the input field (i.e. "sampleFile") is used to retrieve the uploaded file
-    let sampleFile = req.files.logo;
-    console.log(sampleFile)
+    let sampleFile = req.files.sampleFile;
     
     // Use the mv() method to place the file somewhere on your server
-    sampleFile.mv(resolve('./test/'), function(err) {
+    const filePath = './temp/cassie_agility_again.zip'
+    sampleFile.mv(resolve('./temp/cassie_agility_again.zip'), function(err) {
       if (err)
         return res.status(500).send(err);   
     });
+
     res.send("success post")
+
+    var zip = new AdmZip('./temp/cassie_agility_again.zip')
+    zip.extractAllTo("./temp/", true);
+})
+
+
+app.get('/paths', async (req, res) => {
+    const files = await glob('./examples/scenes/temp/**');
+    console.log(files);
+    res.send(files);
 })

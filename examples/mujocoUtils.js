@@ -2,9 +2,40 @@ import * as THREE from 'three';
 import { Reflector  } from './utils/Reflector.js';
 import { MuJoCoDemo } from './main.js';
 
+
+async function downloadTempFiles(mujoco) {
+  const allFiles = await fetch("http://localhost:3000/paths")
+    .then((response) => response.json());
+
+  let hardFiles = ["temp/agility_cassie/assets/achilles-rod.obj",
+  "temp/agility_cassie/assets/cassie-texture.png",
+  "temp/agility_cassie/assets/foot-crank.obj",
+  "temp/agility_cassie/assets/foot.obj",
+  "temp/agility_cassie/assets/heel-spring.obj",
+  "temp/agility_cassie/assets/hip-pitch.obj",
+  "temp/agility_cassie/assets/hip-roll.obj",
+  "temp/agility_cassie/assets/hip-yaw.obj",
+  "temp/agility_cassie/assets/knee-spring.obj",
+  "temp/agility_cassie/assets/knee.obj",
+  "temp/agility_cassie/assets/pelvis.obj",
+  "temp/agility_cassie/assets/plantar-rod.obj",
+  "temp/agility_cassie/assets/shin.obj",
+  "temp/agility_cassie/assets/tarsus.obj",
+  "temp/agility_cassie/cassie.xml",
+  "temp/agility_cassie/scene.xml"]
+
+  await downloadExampleScenesFolderNew(mujoco, allFiles);
+  
+
+  return 'agility_cassie/scene.xml';
+}
+
 export async function reloadFunc() {
   // Delete the old scene and load the new scene
   this.scene.remove(this.scene.getObjectByName("MuJoCo Root"));
+
+  const test_it = await downloadTempFiles(this.mujoco);
+
   [this.model, this.state, this.simulation, this.bodies, this.lights] =
     await loadSceneFromURL(this.mujoco, this.params.scene, this);
   this.simulation.forward();
@@ -267,6 +298,7 @@ export function setupGUI(parentContext) {
  */
 export async function loadSceneFromURL(mujoco, filename, parent) {
     // Free the old simulation.
+    console.log("loading: ", filename)
     if (parent.simulation != null) {
       parent.simulation.free();
       parent.model      = null;
@@ -531,59 +563,7 @@ export async function loadSceneFromURL(mujoco, filename, parent) {
 
 /** Downloads the scenes/examples folder to MuJoCo's virtual filesystem
  * @param {mujoco} mujoco */
-export async function downloadExampleScenesFolder(mujoco) {
-  let allFiles = [
-    "22_humanoids.xml",
-    "adhesion.xml",
-    "agility_cassie/assets/achilles-rod.obj",
-    "agility_cassie/assets/cassie-texture.png",
-    "agility_cassie/assets/foot-crank.obj",
-    "agility_cassie/assets/foot.obj",
-    "agility_cassie/assets/heel-spring.obj",
-    "agility_cassie/assets/hip-pitch.obj",
-    "agility_cassie/assets/hip-roll.obj",
-    "agility_cassie/assets/hip-yaw.obj",
-    "agility_cassie/assets/knee-spring.obj",
-    "agility_cassie/assets/knee.obj",
-    "agility_cassie/assets/pelvis.obj",
-    "agility_cassie/assets/plantar-rod.obj",
-    "agility_cassie/assets/shin.obj",
-    "agility_cassie/assets/tarsus.obj",
-    "agility_cassie/cassie.xml",
-    "agility_cassie/scene.xml",
-    "arm26.xml",
-    "balloons.xml",
-    "flag.xml",
-    "hammock.xml",
-    "humanoid.xml",
-    "humanoid_body.xml",
-    "mug.obj",
-    "mug.png",
-    "mug.xml",
-    "scene.xml",
-    "shadow_hand/assets/f_distal_pst.obj",
-    "shadow_hand/assets/f_knuckle.obj",
-    "shadow_hand/assets/f_middle.obj",
-    "shadow_hand/assets/f_proximal.obj",
-    "shadow_hand/assets/forearm_0.obj",
-    "shadow_hand/assets/forearm_1.obj",
-    "shadow_hand/assets/forearm_collision.obj",
-    "shadow_hand/assets/lf_metacarpal.obj",
-    "shadow_hand/assets/mounting_plate.obj",
-    "shadow_hand/assets/palm.obj",
-    "shadow_hand/assets/th_distal_pst.obj",
-    "shadow_hand/assets/th_middle.obj",
-    "shadow_hand/assets/th_proximal.obj",
-    "shadow_hand/assets/wrist.obj",
-    "shadow_hand/left_hand.xml",
-    "shadow_hand/right_hand.xml",
-    "shadow_hand/scene_left.xml",
-    "shadow_hand/scene_right.xml",
-    "simple.xml",
-    "slider_crank.xml",
-    "model_with_tendon.xml",
-  ];
-
+export async function downloadExampleScenesFolder(mujoco, allFiles) {
   let requests = allFiles.map((url) => fetch("./examples/scenes/" + url));
   let responses = await Promise.all(requests);
   for (let i = 0; i < responses.length; i++) {
@@ -598,8 +578,42 @@ export async function downloadExampleScenesFolder(mujoco) {
       if (allFiles[i].endsWith(".png") || allFiles[i].endsWith(".stl") || allFiles[i].endsWith(".skn")) {
           mujoco.FS.writeFile("/working/" + allFiles[i], new Uint8Array(await responses[i].arrayBuffer()));
       } else {
+        console.log("/working/" + allFiles[i])
           mujoco.FS.writeFile("/working/" + allFiles[i], await responses[i].text());
       }
+  }
+}
+
+/** Downloads the scenes/examples folder to MuJoCo's virtual filesystem
+ * @param {mujoco} mujoco */
+export async function downloadExampleScenesFolderNew(mujoco, allFiles) {
+  let requests = allFiles.map((url) => fetch("./" + url));
+  let responses = await Promise.all(requests);
+  
+  for (let i = 0; i < responses.length; i++) {
+      let split = allFiles[i].split("/");
+      let working = '/working/';
+      try {
+        // mujoco.FS.chmod(working, 777)
+        for (let f = 0; f < split.length - 1; f++) {
+            working += split[f];
+            if (!mujoco.FS.analyzePath(working).exists) { mujoco.FS.mkdir(working); }
+            working += "/";
+        }
+        allFiles[i] = allFiles[i].split("examples/scenes/")[1];
+        mujoco.FS.chmod("/working/" + allFiles[i], 777)
+
+        if (allFiles[i].endsWith(".png") || allFiles[i].endsWith(".stl") || allFiles[i].endsWith(".skn")) {
+          mujoco.FS.writeFile("/working/" + allFiles[i], new Uint8Array(await responses[i].arrayBuffer()));
+        } else if (allFiles[i].includes(".")){
+            console.log("/working/" + allFiles[i])
+            mujoco.FS.writeFile("/working/" + allFiles[i], await responses[i].text());
+        }
+
+      } catch(error) {
+        console.log("file didn't work: ", allFiles[i], error, working);
+      }
+      
   }
 }
 
